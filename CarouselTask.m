@@ -72,6 +72,7 @@ S.GUITabs.Cue={'Cue'};
 %Task Parameters
 S.GUIMeta.Photometry.Style = 'checkbox';%Default needs no photometry
 S.GUIMeta.CsystemOn.Style = 'checkbox';
+S.GUIMeta.variableRewards.Style = 'checkbox';
 S.GUIMeta.PulsePadOn.Style = 'checkbox';
 S.GUIMeta.SocialClueSpecificReward.Style = 'checkbox';
 S.GUIMeta.DbleFibers.Style = 'checkbox';
@@ -82,7 +83,7 @@ S.GUIMeta.Isobestic405.String='Auto';
 S.GUI.RedChannel=0;
 S.GUIMeta.RedChannel.Style='checkbox';
 S.GUIMeta.RedChannel.String='Auto'; 
-S.GUIPanels.Recording={'CsystemOn','Photometry','DbleFibers','Isobestic405','RedChannel','PulsePadOn','LivePlots','SocialClueSpecificReward','MaxTrials'};
+S.GUIPanels.Recording={'CsystemOn','variableRewards','Photometry','DbleFibers','Isobestic405','RedChannel','PulsePadOn','LivePlots','SocialClueSpecificReward','MaxTrials'};
 S.GUIPanels.Reward={'RewardAmount','RewardValve','RewardAmountSocialClue1','RewardAmountSocialClue2','RewardAmountSocialClue3','RewardAmountSocialClue4','RewardAmountSocialClue5','RewardAmountSocialClue6','RewardAmountSocialClue7','RewardAmountSocialClue8','RewardAmountSocialClue9','RewardAmountSocialClue10','RewardAmountSocialClue11','RewardAmountSocialClue12'};
 %Plot
 S.GUI.MultiplePlots = 1;
@@ -213,6 +214,17 @@ for x = 1:nBlocks % x -> number of blocks, for carousel we only have 1 block, bu
     end
 end
 BpodSystem.Data.TrialTypes = []; % The trial type of each trial completed will be added here.
+
+%%Bpodsystem.Data.RewardValues = [];
+%%if variableRewards
+  %%  RewardValues = randsample(s,[4,8,12],S.GUI.MaxTrials,true,[1/3 1/3 1/3])
+%%else  
+%%end
+
+if variableRewards
+	varyReward = randsample(s,[4,8,12],S.GUI.MaxTrials,true,[1/3 1/3 1/3]);
+	S.Reward = varyReward(CurrentTrial);
+end 
 
 
 selectSpecificReward=0;
@@ -464,7 +476,7 @@ for currentTrial = 1:S.GUI.MaxTrials
 			'OutputActions',{});
 			
     sma = AddState(sma,'Name','CenterReward',...
-			'Timer',UniqueValveTime,...
+			'Timer',S.Reward,...
 			'StateChangeConditions',{'Tup','Drinking'},...
 			'OutputActions',{'Valve',1});
 
@@ -615,7 +627,7 @@ if LivePlots
     TrainingLev2_PlotFile;
 end
 
-TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot,'update',Data.nTrials+1,TrialTypes,Outcomes); %aplicar la ñera para que solo salga 1 punto en lugar de 12 hahahahaha (TrialTypes -> 1) (Sorry for my comment in spanish but is important for me to rember this, basically I applied a trick to handle more EASILY the outcome plot)
+TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot,'update',Data.nTrials+1,TrialTypes,Outcomes); %aplicar la Ã±era para que solo salga 1 punto en lugar de 12 hahahahaha (TrialTypes -> 1) (Sorry for my comment in spanish but is important for me to rember this, basically I applied a trick to handle more EASILY the outcome plot)
 set(BpodSystem.GUIHandles.OutcomePlot,'YTickLabel', {'Other', 'Other', 'Right'}, 'FontSize', 11);
 % Update Trial count / Trial Type / Block number
 
