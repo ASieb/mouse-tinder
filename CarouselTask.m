@@ -26,6 +26,8 @@ if isempty(fieldnames(S))  % If settings file was an empty struct, populate stru
     S.GUIMeta.Photometry.Style = 'checkbox';%Default needs no photometry
     S.GUI.CsystemOn=0; %Default needs no Csystem Working
     S.GUIMeta.CsystemOn.Style = 'checkbox';
+    S.GUI.variableRewards = 0;
+    S.GUIMeta.variableRewards.Style = 'checkbox';
     S.GUI.PulsePadOn=0; %Default needs no PulsePad
     S.GUIMeta.PulsePadOn.Style = 'checkbox';
     S.GUI.SocialClueSpecificReward=0; %We will use field RewardAmount as a global Reward
@@ -72,9 +74,9 @@ S.GUITabs.Cue={'Cue'};
 %Task Parameters
 S.GUIMeta.Photometry.Style = 'checkbox';%Default needs no photometry
 S.GUIMeta.CsystemOn.Style = 'checkbox';
-S.GUIMeta.variableRewards.Style = 'checkbox';
 S.GUIMeta.PulsePadOn.Style = 'checkbox';
 S.GUIMeta.SocialClueSpecificReward.Style = 'checkbox';
+S.GUIMeta.variableRewards.Style = 'checkbox';
 S.GUIMeta.DbleFibers.Style = 'checkbox';
 S.GUIMeta.LivePlots.Style = 'checkbox';
 S.GUI.Isobestic405=0;
@@ -83,8 +85,11 @@ S.GUIMeta.Isobestic405.String='Auto';
 S.GUI.RedChannel=0;
 S.GUIMeta.RedChannel.Style='checkbox';
 S.GUIMeta.RedChannel.String='Auto'; 
-S.GUIPanels.Recording={'CsystemOn','variableRewards','Photometry','DbleFibers','Isobestic405','RedChannel','PulsePadOn','LivePlots','SocialClueSpecificReward','MaxTrials'};
-S.GUIPanels.Reward={'RewardAmount','RewardValve','RewardAmountSocialClue1','RewardAmountSocialClue2','RewardAmountSocialClue3','RewardAmountSocialClue4','RewardAmountSocialClue5','RewardAmountSocialClue6','RewardAmountSocialClue7','RewardAmountSocialClue8','RewardAmountSocialClue9','RewardAmountSocialClue10','RewardAmountSocialClue11','RewardAmountSocialClue12'};
+S.GUIPanels.Recording={'CsystemOn','variableRewards','Photometry','DbleFibers','Isobestic405','RedChannel','PulsePadOn','LivePlots','SocialClueSpecificReward','MaxTrials'};%%'variableRewards'
+S.GUIPanels.Reward={'RewardAmount','RewardValve'}; %%'RewardAmountSocialClue1','RewardAmountSocialClue2','RewardAmountSocialClue3','RewardAmountSocialClue4','RewardAmountSocialClue5','RewardAmountSocialClue6','RewardAmountSocialClue7','RewardAmountSocialClue8','RewardAmountSocialClue9','RewardAmountSocialClue10','RewardAmountSocialClue11','RewardAmountSocialClue12'%
+%%commented out all the rewardamountsocialclue stuff because I don't want
+%%to have reward values different across object animals as 6/3/2020
+
 %Plot
 S.GUI.MultiplePlots = 1;
 S.GUIMeta.MultiplePlots.Style='checkbox';
@@ -136,6 +141,7 @@ HandlePauseCondition;
 S = BpodParameterGUI('sync', S); %Synchronize parameters from GUI 
 Photometry = S.GUI.Photometry;
 CsystemOn = S.GUI.CsystemOn;
+variableRewards = S.GUI.variableRewards;
 disp(CsystemOn)
 PulsePad = S.GUI.PulsePadOn;
 SocialClueSpecificReward = S.GUI.SocialClueSpecificReward;
@@ -167,6 +173,7 @@ elseif PulsePad
     evalin('base', 'PulsePal');
 end
 pause(.1);
+
 
 
 
@@ -215,17 +222,24 @@ for x = 1:nBlocks % x -> number of blocks, for carousel we only have 1 block, bu
 end
 BpodSystem.Data.TrialTypes = []; % The trial type of each trial completed will be added here.
 
-%%Bpodsystem.Data.RewardValues = [];
-%%if variableRewards
-  %%  RewardValues = randsample(s,[4,8,12],S.GUI.MaxTrials,true,[1/3 1/3 1/3])
-%%else  
-%%end
 
 if variableRewards
-	varyReward = randsample(s,[4,8,12],S.GUI.MaxTrials,true,[1/3 1/3 1/3]);
-	S.Reward = varyReward(CurrentTrial);
-end 
+%     K = RandStream('mlfg6331_64'); USE if you want to utilize a seed, so
+%     that you can accces the exact same generate ranom number set. I want
+%     it all new all the time so yeah
+    rewardValues = randsample([4,8,12],S.GUI.MaxTrials,true,[1/3 1/3 1/3])
+else
+    disp('Reward values are not shuffled in this session');
+end
 
+
+
+% 	shuffledReward = randsample([4,8,12],S.MaxTrials,true,[1/3 1/3 1/3]);
+% 	rewardValues = shuffledReward(CurrentTrial)
+
+
+%%commented out the below in order to sanity check myself, AAS 6/2/2020
+%%trying to code three randomly variable reward amounts
 
 selectSpecificReward=0;
 if ~SocialClueSpecificReward 
@@ -242,8 +256,8 @@ end
 
 %% Initialize plots
 
-%BpodSystem.ProtocolFigures.OutcomePlotFig = figure('Position', [200 200 1000 200],'name','Outcome plot','numbertitle','off', 'MenuBar', 'none', 'Resize', 'off');
-%BpodSystem.GUIHandles.OutcomePlot = axes('Position', [.075 .3 .89 .6]);
+BpodSystem.ProtocolFigures.OutcomePlotFig = figure('Position', [200 200 1000 200],'name','Outcome plot','numbertitle','off', 'MenuBar', 'none', 'Resize', 'off');
+BpodSystem.GUIHandles.OutcomePlot = axes('Position', [.075 .3 .89 .6]);
 
 
 %In order to revert to a more simplistic and minimalist version delete the
@@ -281,9 +295,9 @@ end
 if LivePlots && Photometry
     [S.TrialsNames, S.TrialsMatrix] = carouselTaskTrialPhase(S,'simpleCarousel');
     FigNidaq1=Online_NidaqPlot('ini','470');
-        if S.GUI.DbleFibers || S.GUI.Isobestic405 || S.GUI.RedChannel
-            FigNidaq2=Online_NidaqPlot('ini','channel2');
-        end
+% %         if S.GUI.DbleFibers || S.GUI.Isobestic405 || S.GUI.RedChannel
+% %             FigNidaq2=Online_NidaqPlot('ini','channel2');
+% %         end
         if S.GUI.MultiplePlots
             FigNidaq3=Online_NidaqPlot('ini','470_SocialPlataform');
         end
@@ -308,8 +322,14 @@ for currentTrial = 1:S.GUI.MaxTrials
     %Present the mouse --> Ask arduino to control the
     %industrialMicrocontroller
     %Select Mouse according to the Trial open and close door.
-    
-    
+ 
+    if variableRewards
+        %shuffledReward = rewardValues(currentTrial); 
+        shuffledReward = GetValveTimes(rewardValues(currentTrial),S.GUI.RewardValve)
+        disp(rewardValues(currentTrial));
+    end
+   
+   
 
     if CsystemOn
         CsystemGate(0);
@@ -332,82 +352,82 @@ for currentTrial = 1:S.GUI.MaxTrials
     %Pre task states
     %%%% Asamble  State Matrix Using Redundant States found in the first
     %%%% carousel protocol version (Bpod Alpha)
-    if selectSpecificReward
-        switch TrialTypes(currentTrial) % Determine trial-specific state matrix fields
-            case 1
-                %in case you need modify something specifically in this trial
-                %type
-                R = GetValveTimes(S.GUI.RewardAmountSocialClue1, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
-                UniqueValveTime = R(1);
-                S.Reward=UniqueValveTime;
-            case 2
-                %in case you need modify something specifically in this trial
-                %type
-                R = GetValveTimes(S.GUI.RewardAmountSocialClue2, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
-                UniqueValveTime = R(1);
-                S.Reward=UniqueValveTime;
-            case 3
-                %in case you need modify something specifically in this trial
-                %type
-                R = GetValveTimes(S.GUI.RewardAmountSocialClue3, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
-                UniqueValveTime = R(1);
-                S.Reward=UniqueValveTime;
-            case 4
-                %in case you need modify something specifically in this trial
-                %type
-                R = GetValveTimes(S.GUI.RewardAmountSocialClue4, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
-                UniqueValveTime = R(1);
-                S.Reward=UniqueValveTime;
-            case 5           
-                %in case you need modify something specifically in this trial
-                %type
-                R = GetValveTimes(S.GUI.RewardAmountSocialClue5, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
-                UniqueValveTime = R(1);
-                S.Reward=UniqueValveTime;
-            case 6
-                %in case you need modify something specifically in this trial
-                %type
-                R = GetValveTimes(S.GUI.RewardAmountSocialClue6, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
-                UniqueValveTime = R(1);
-                S.Reward=UniqueValveTime;
-            case 7
-                %in case you need modify something specifically in this trial
-                %type
-                R = GetValveTimes(S.GUI.RewardAmountSocialClue7, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
-                UniqueValveTime = R(1);
-                S.Reward=UniqueValveTime;
-            case 8
-                %in case you need modify something specifically in this trial
-                %type
-                R = GetValveTimes(S.GUI.RewardAmountSocialClue8, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
-                UniqueValveTime = R(1);
-                S.Reward=UniqueValveTime;
-            case 9 
-                %in case you need modify something specifically in this trial
-                %type
-                R = GetValveTimes(S.GUI.RewardAmountSocialClue9, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
-                UniqueValveTime = R(1);
-                S.Reward=UniqueValveTime;
-            case 10
-                %in case you need modify something specifically in this trial
-                %type
-                R = GetValveTimes(S.GUI.RewardAmountSocialClue10, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
-                UniqueValveTime = R(1);
-                S.Reward=UniqueValveTime;
-            case 11
-                %in case you need modify something specifically in this trial
-                %type
-                R = GetValveTimes(S.GUI.RewardAmountSocialClue11, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
-                UniqueValveTime = R(1);
-                S.Reward=UniqueValveTime;
-            case 12
-                %in case you need modify something specifically in this trial
-                %type
-                R = GetValveTimes(S.GUI.RewardAmountSocialClue12, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
-                UniqueValveTime = R(1);
-                S.Reward=UniqueValveTime;
-        end
-    end
+% %     if selectSpecificReward
+% %         switch TrialTypes(currentTrial) % Determine trial-specific state matrix fields
+% %             case 1
+% %                 %in case you need modify something specifically in this trial
+% %                 %type
+% %                 R = GetValveTimes(S.GUI.RewardAmountSocialClue1, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
+% %                 UniqueValveTime = R(1);
+% %                 S.Reward=UniqueValveTime;
+% %             case 2
+% %                 %in case you need modify something specifically in this trial
+% %                 %type
+% %                 R = GetValveTimes(S.GUI.RewardAmountSocialClue2, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
+% %                 UniqueValveTime = R(1);
+% %                 S.Reward=UniqueValveTime;
+% %             case 3
+% %                 %in case you need modify something specifically in this trial
+% %                 %type
+% %                 R = GetValveTimes(S.GUI.RewardAmountSocialClue3, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
+% %                 UniqueValveTime = R(1);
+% %                 S.Reward=UniqueValveTime;
+% %             case 4
+% %                 %in case you need modify something specifically in this trial
+% %                 %type
+% %                 R = GetValveTimes(S.GUI.RewardAmountSocialClue4, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
+% %                 UniqueValveTime = R(1);
+% %                 S.Reward=UniqueValveTime;
+% %             case 5           
+% %                 %in case you need modify something specifically in this trial
+% %                 %type
+% %                 R = GetValveTimes(S.GUI.RewardAmountSocialClue5, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
+% %                 UniqueValveTime = R(1);
+% %                 S.Reward=UniqueValveTime;
+% %             case 6
+% %                 %in case you need modify something specifically in this trial
+% %                 %type
+% %                 R = GetValveTimes(S.GUI.RewardAmountSocialClue6, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
+% %                 UniqueValveTime = R(1);
+% %                 S.Reward=UniqueValveTime;
+% %             case 7
+% %                 %in case you need modify something specifically in this trial
+% %                 %type
+% %                 R = GetValveTimes(S.GUI.RewardAmountSocialClue7, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
+% %                 UniqueValveTime = R(1);
+% %                 S.Reward=UniqueValveTime;
+% %             case 8
+% %                 %in case you need modify something specifically in this trial
+% %                 %type
+% %                 R = GetValveTimes(S.GUI.RewardAmountSocialClue8, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
+% %                 UniqueValveTime = R(1);
+% %                 S.Reward=UniqueValveTime;
+% %             case 9 
+% %                 %in case you need modify something specifically in this trial
+% %                 %type
+% %                 R = GetValveTimes(S.GUI.RewardAmountSocialClue9, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
+% %                 UniqueValveTime = R(1);
+% %                 S.Reward=UniqueValveTime;
+% %             case 10
+% %                 %in case you need modify something specifically in this trial
+% %                 %type
+% %                 R = GetValveTimes(S.GUI.RewardAmountSocialClue10, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
+% %                 UniqueValveTime = R(1);
+% %                 S.Reward=UniqueValveTime;
+% %             case 11
+% %                 %in case you need modify something specifically in this trial
+% %                 %type
+% %                 R = GetValveTimes(S.GUI.RewardAmountSocialClue11, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
+% %                 UniqueValveTime = R(1);
+% %                 S.Reward=UniqueValveTime;
+% %             case 12
+% %                 %in case you need modify something specifically in this trial
+% %                 %type
+% %                 R = GetValveTimes(S.GUI.RewardAmountSocialClue12, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
+% %                 UniqueValveTime = R(1);
+% %                 S.Reward=UniqueValveTime;
+% %         end
+% %     end
 
     
     sma = AddState(sma, 'Name', 'InitialDelay',...
@@ -476,7 +496,7 @@ for currentTrial = 1:S.GUI.MaxTrials
 			'OutputActions',{});
 			
     sma = AddState(sma,'Name','CenterReward',...
-			'Timer',S.Reward,...
+			'Timer',shuffledReward,...
 			'StateChangeConditions',{'Tup','Drinking'},...
 			'OutputActions',{'Valve',1});
 
@@ -524,7 +544,9 @@ for currentTrial = 1:S.GUI.MaxTrials
         BpodSystem.Data = AddTrialEvents(BpodSystem.Data,RawEvents);            % Computes trial events from raw data
         BpodSystem.Data.TrialSettings(currentTrial) = S;                        % Adds the settings used for the current trial to the Data struct (to be saved after the trial ends)
         BpodSystem.Data.TrialTypes(currentTrial) = TrialTypes(currentTrial);    % Adds the trial type of the current trial to data
+        BpodSystem.Data.rewardValues(currentTrial) = rewardValues(currentTrial);
         BpodSystem.Data = BpodNotebook('sync', BpodSystem.Data);
+        
     % Add dwell time based on beam 1 to the data file
     if ~isfield(BpodSystem.Data, 'Dwelltime')
         BpodSystem.Data.Dwelltime = [];
@@ -584,14 +606,16 @@ for currentTrial = 1:S.GUI.MaxTrials
             BpodSystem.Pause=1;
             HandlePauseCondition;
         end
-        if S.GUI.DbleFibers || S.GUI.RedChannel
-        thismax=max(Photo2Data(S.GUI.NidaqSamplingRate:S.GUI.NidaqSamplingRate*2,1));
-        if thismax>4 || thismax<0.3
-            disp('WARNING - Something is wrong with fiber #2 - run check-up! - unpause to ignore')
-            BpodSystem.Pause=1;
-            HandlePauseCondition;
-        end
-        end
+        %%commented out Dble fibers error bc I am not using the red
+        %%channel, AS 6/3/2020
+% %         if S.GUI.DbleFibers || S.GUI.RedChannel
+% %         thismax=max(Photo2Data(S.GUI.NidaqSamplingRate:S.GUI.NidaqSamplingRate*2,1));
+% %         if thismax>4 || thismax<0.3
+% %             disp('WARNING - Something is wrong with fiber #2 - run check-up! - unpause to ignore')
+% %             BpodSystem.Pause=1;
+% %             HandlePauseCondition;
+% %         end
+% %         end
     end
 
     
@@ -627,7 +651,7 @@ if LivePlots
     TrainingLev2_PlotFile;
 end
 
-TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot,'update',Data.nTrials+1,TrialTypes,Outcomes); %aplicar la Ã±era para que solo salga 1 punto en lugar de 12 hahahahaha (TrialTypes -> 1) (Sorry for my comment in spanish but is important for me to rember this, basically I applied a trick to handle more EASILY the outcome plot)
+TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot,'update',Data.nTrials+1,TrialTypes,Outcomes); %aplicar la ñera para que solo salga 1 punto en lugar de 12 hahahahaha (TrialTypes -> 1) (Sorry for my comment in spanish but is important for me to rember this, basically I applied a trick to handle more EASILY the outcome plot)
 set(BpodSystem.GUIHandles.OutcomePlot,'YTickLabel', {'Other', 'Other', 'Right'}, 'FontSize', 11);
 % Update Trial count / Trial Type / Block number
 
