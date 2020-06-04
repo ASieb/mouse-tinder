@@ -5,6 +5,8 @@ New Carousel Protocol
 By: Leonardo Jared Ramirez Sanchez, CSHL
 
 Last modified: 05/2/2019 4:58 PM
+
+Last modified by AAS 06/4/2020
  
 Added: SoftCodeHandlerFunction to control Bonsai events 
 %}
@@ -651,7 +653,7 @@ if LivePlots
     TrainingLev2_PlotFile;
 end
 
-TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot,'update',Data.nTrials+1,TrialTypes,Outcomes); %aplicar la ñera para que solo salga 1 punto en lugar de 12 hahahahaha (TrialTypes -> 1) (Sorry for my comment in spanish but is important for me to rember this, basically I applied a trick to handle more EASILY the outcome plot)
+TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot,'update',Data.nTrials+1,TrialTypes,Outcomes); %aplicar la Ã±era para que solo salga 1 punto en lugar de 12 hahahahaha (TrialTypes -> 1) (Sorry for my comment in spanish but is important for me to rember this, basically I applied a trick to handle more EASILY the outcome plot)
 set(BpodSystem.GUIHandles.OutcomePlot,'YTickLabel', {'Other', 'Other', 'Right'}, 'FontSize', 11);
 % Update Trial count / Trial Type / Block number
 
