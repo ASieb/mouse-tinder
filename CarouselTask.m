@@ -5,8 +5,6 @@ New Carousel Protocol
 By: Leonardo Jared Ramirez Sanchez, CSHL
 
 Last modified: 05/2/2019 4:58 PM
-
-Last modified by AAS 06/4/2020
  
 Added: SoftCodeHandlerFunction to control Bonsai events 
 %}
@@ -88,7 +86,7 @@ S.GUI.RedChannel=0;
 S.GUIMeta.RedChannel.Style='checkbox';
 S.GUIMeta.RedChannel.String='Auto'; 
 S.GUIPanels.Recording={'CsystemOn','variableRewards','Photometry','DbleFibers','Isobestic405','RedChannel','PulsePadOn','LivePlots','SocialClueSpecificReward','MaxTrials'};%%'variableRewards'
-S.GUIPanels.Reward={'RewardAmount','RewardValve'}; %%'RewardAmountSocialClue1','RewardAmountSocialClue2','RewardAmountSocialClue3','RewardAmountSocialClue4','RewardAmountSocialClue5','RewardAmountSocialClue6','RewardAmountSocialClue7','RewardAmountSocialClue8','RewardAmountSocialClue9','RewardAmountSocialClue10','RewardAmountSocialClue11','RewardAmountSocialClue12'%
+S.GUIPanels.Reward={'RewardAmount','RewardValve'}; %%'RewardAmountSocialClue1','RewardAmountSocialClue2','RewardAmountSocialClue3','RewardAmountSocialClue4','RewardAmountSocialClue5','RewardAmountSocialClue6','RewardAmountSocialClue7','RewardAmountSocialClue8','RewardAmountSocialClue9','RewardAmountSocialClue10','RewardAmountSocialClue11','RewardAmountSocialClue8'%
 %%commented out all the rewardamountsocialclue stuff because I don't want
 %%to have reward values different across object animals as 6/3/2020
 
@@ -113,7 +111,7 @@ S.GUI.NidaqDuration=150;
 S.GUI.NidaqSamplingRate=6100;
 S.GUI.DecimateFactor=610;
 S.GUI.LED1_Name='Fiber1 470-A1';
-S.GUI.LED1_Amp=.75;
+S.GUI.LED1_Amp=4.5;
 S.GUI.LED1_Freq=211;
 S.GUI.LED2_Name='Fiber1 405 / 565';
 S.GUI.LED2_Amp=9.8;
@@ -150,7 +148,6 @@ SocialClueSpecificReward = S.GUI.SocialClueSpecificReward;
 LivePlots = S.GUI.LivePlots;
 
 
-
 %  Initialize Csystem and PulsePad 
 
 try
@@ -179,19 +176,20 @@ pause(.1);
 
 
 
+
 %% Define trial types parameters, trial sequence 
 
 % Trial Sequence (with or without blocks) which will be define by the
 % animals you are presenting : 1 4 5 3 2 1 
 % TrialSequence of size S.GUI.MaxTrials
 nBlocks=1; 
-nTrialTypes(nBlocks)= 12; %Because we only have 12 space in carousel
+nTrialTypes(nBlocks)= 8; %Changed from 8 to 8 since #animals I have changedAAS 6/11/20. Because we only have 8 space in carousel
 MaximumTravelDistance = 4; %Max number of carousel mice to skip
 BlockLength =  S.GUI.MaxTrials; %Originally 5000 in previous BpodProtocol
 % Proccess to generate random trials for carousel Task
 for x = 1:nBlocks % x -> number of blocks, for carousel we only have 1 block, but this could be useful in the future....
     TT = zeros(1,BlockLength);
-    TT(1) = ceil(rand*12);
+    TT(1) = ceil(rand*8);
     for y = 2:BlockLength
         UniqueTrialTypes = nTrialTypes(x);
         Validated = 0;
@@ -202,9 +200,9 @@ for x = 1:nBlocks % x -> number of blocks, for carousel we only have 1 block, bu
             Diff = abs(CandidateValue-PreviousValue);
             if Diff > 6
                 if CandidateValue > PreviousValue
-                    PreviousValue = PreviousValue + 12;
+                    PreviousValue = PreviousValue + 8;
                 else
-                    CandidateValue = CandidateValue + 12;
+                    CandidateValue = CandidateValue + 8;
                 end
                 Diff = abs(CandidateValue-PreviousValue);
             end
@@ -229,14 +227,14 @@ if variableRewards
 %     K = RandStream('mlfg6331_64'); USE if you want to utilize a seed, so
 %     that you can accces the exact same generate ranom number set. I want
 %     it all new all the time so yeah
-    rewardValues = randsample([4,8,12],S.GUI.MaxTrials,true,[1/3 1/3 1/3])
+    rewardValues = randsample([8,12,16],S.GUI.MaxTrials,true,[1/3 1/3 1/3]);
 else
     disp('Reward values are not shuffled in this session');
 end
 
 
 
-% 	shuffledReward = randsample([4,8,12],S.MaxTrials,true,[1/3 1/3 1/3]);
+% 	shuffledReward = randsample([4,8,8],S.MaxTrials,true,[1/3 1/3 1/3]);
 % 	rewardValues = shuffledReward(CurrentTrial)
 
 
@@ -287,6 +285,8 @@ if LivePlots
 end
 
 BpodNotebook('init');
+TotalRewardDisplay('init');
+
 
 % Initialize Photometry
 if Photometry
@@ -296,17 +296,18 @@ end
 %More plots photometry
 if LivePlots && Photometry
     [S.TrialsNames, S.TrialsMatrix] = carouselTaskTrialPhase(S,'simpleCarousel');
-    FigNidaq1=Online_NidaqPlot('ini','470');
-% %         if S.GUI.DbleFibers || S.GUI.Isobestic405 || S.GUI.RedChannel
-% %             FigNidaq2=Online_NidaqPlot('ini','channel2');
-% %         end
-        if S.GUI.MultiplePlots
-            FigNidaq3=Online_NidaqPlot('ini','470_SocialPlataform');
+    FigNidaq1 = Online_NidaqPlot('ini','470');
+        if S.GUI.DbleFibers || S.GUI.Isobestic405 || S.GUI.RedChannel
+            FigNidaq2=Online_NidaqPlot('ini','channel2');
         end
-
+if S.GUI.MultiplePlots
+            FigNidaq3 = Online_NidaqPlot('ini','470_SocialPlataform');
 end
 
+%%end
+
 %% SoftCodeHandlerFunction for Bonsai and UDP communication
+% BpodSystem.BonsaiSocket.UDP = udp('87.0.0.1',1836);
 BpodSystem.BonsaiSocket.UDP = udp('127.0.0.1',11236);
 fopen(BpodSystem.BonsaiSocket.UDP);
 BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_Bonsai';
@@ -327,7 +328,7 @@ for currentTrial = 1:S.GUI.MaxTrials
  
     if variableRewards
         %shuffledReward = rewardValues(currentTrial); 
-        shuffledReward = GetValveTimes(rewardValues(currentTrial),S.GUI.RewardValve)
+        shuffledReward = GetValveTimes(rewardValues(currentTrial),S.GUI.RewardValve);
         disp(rewardValues(currentTrial));
     end
    
@@ -422,10 +423,10 @@ for currentTrial = 1:S.GUI.MaxTrials
 % %                 R = GetValveTimes(S.GUI.RewardAmountSocialClue11, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
 % %                 UniqueValveTime = R(1);
 % %                 S.Reward=UniqueValveTime;
-% %             case 12
+% %             case 8
 % %                 %in case you need modify something specifically in this trial
 % %                 %type
-% %                 R = GetValveTimes(S.GUI.RewardAmountSocialClue12, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
+% %                 R = GetValveTimes(S.GUI.RewardAmountSocialClue8, S.GUI.RewardValve); %remeber you can choose up to 8 valves and each should have been calibrated
 % %                 UniqueValveTime = R(1);
 % %                 S.Reward=UniqueValveTime;
 % %         end
@@ -515,6 +516,8 @@ for currentTrial = 1:S.GUI.MaxTrials
     SendStateMatrix(sma);
     
     
+    TotalRewardDisplay('add', rewardValues(currentTrial));
+
     %Intialize photometry 
     if Photometry
         Nidaq_photometry('WaitToStart');  %Start photometry data when trial Start//Quentin will provide Nidaq_Photometry function...
@@ -632,7 +635,7 @@ end %End main Loop
 
 
 
-
+end
 
 %Internal function for plots
 function UpdateOutcomePlot(TrialTypes, Data, LivePlots) %UpdateOutcomePlot(TrialTypes, Data)
@@ -653,7 +656,7 @@ if LivePlots
     TrainingLev2_PlotFile;
 end
 
-TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot,'update',Data.nTrials+1,TrialTypes,Outcomes); %aplicar la Ã±era para que solo salga 1 punto en lugar de 12 hahahahaha (TrialTypes -> 1) (Sorry for my comment in spanish but is important for me to rember this, basically I applied a trick to handle more EASILY the outcome plot)
+TrialTypeOutcomePlot(BpodSystem.GUIHandles.OutcomePlot,'update',Data.nTrials+1,TrialTypes,Outcomes); %aplicar la ñera para que solo salga 1 punto en lugar de 8 hahahahaha (TrialTypes -> 1) (Sorry for my comment in spanish but is important for me to rember this, basically I applied a trick to handle more EASILY the outcome plot)
 set(BpodSystem.GUIHandles.OutcomePlot,'YTickLabel', {'Other', 'Other', 'Right'}, 'FontSize', 11);
 % Update Trial count / Trial Type / Block number
 
